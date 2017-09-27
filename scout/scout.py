@@ -7,7 +7,7 @@ import os
 import json
 import datetime
 
-SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
+SCOPES = 'https://www.googleapis.com/auth/calendar'
 CLIENT_SECRET_FILE = 'auth.json'
 APPLICATION_NAME = 'scout'
 
@@ -31,7 +31,8 @@ def get_largest_diff(service, ids, start_time, end_time):
         return None
 
 def get_credentials():
-    path = os.getcwd() + '/config/' + CLIENT_SECRET_FILE
+    auth_dir = os.path.abspath('config')
+    path = os.path.join(auth_dir, CLIENT_SECRET_FILE)
     store = Storage(path)
     credentials = store.get()
 
