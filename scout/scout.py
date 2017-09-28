@@ -5,30 +5,36 @@ from oauth2client.file import Storage
 import httplib2
 import os
 import json
-import datetime
+from datetime import datetime, timedelta
 
-SCOPES = 'https://www.googleapis.com/auth/calendar'
+SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
 CLIENT_SECRET_FILE = 'auth.json'
 APPLICATION_NAME = 'scout'
 
-def get_largest_diff(service, ids, start_time, end_time):
-    if len(ids) <= 0:
-        return None
-    elif len(ids) == 1:
-        # return most available block given 1 person(s) schedule
+def get_most_available_block(service, calendar_id, start_time, end_time):
+    # break up date range to array of start/end date ranges for each day
+    s = datetime.strptime(start_time, '%Y-%m-%d')
+    e = datetime.strptime(end_time, '%Y-%m-%d')
+    ranges = []
+    while s.day <= e.day:
+        _s = datetime(s.year, s.month, s.day, 13, 0, 0)
+        start = _s.strftime('%Y-%m-%dT%H:%M:%SZ')
+        end = (_s + timedelta(hours=8)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        ranges.append((start, end))
+        s += timedelta(days=1)
 
-        # get events
+    # get events
+    for r in ranges:
         eventsResult = service.events().list(
-                calendarId=ids[0], timeMin=start_time, timeMax=end_time, 
+                calendarId=calendar_id, timeMin=r[0], timeMax=r[1], 
                 singleEvents=True, orderBy='startTime').execute()
         events = eventsResult.get('items', [])
+        print('************')
+        for d in events:
+            print(json.dumps(d, indent=4))
+        print('************')
 
-        # naive solution: for each event, get max diff of it to every other event, then compare m max diffs?
-
-        return events
-    else:
-        # return most available block given n person(s) schedule
-        return None
+    return events
 
 def get_credentials():
     auth_dir = os.path.abspath('config')
@@ -50,13 +56,11 @@ def main():
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('calendar', 'v3', http=http)
 
-    ids = ['primary']
-    start_time = '2017-09-25T13:00:00Z'
-    end_time = '2017-09-26T21:00:00Z'
+    calendar_id = 'primary'
+    start_time = '2017-09-20'
+    end_time = '2017-09-26'
 
-    diff = get_largest_diff(service, ids, start_time, end_time)
-    for d in diff:
-        print(json.dumps(d, indent=4))
+    diff = get_most_available_block(service, calendar_id, start_time, end_time)
 
 if __name__ == '__main__':
     main()
