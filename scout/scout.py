@@ -105,7 +105,10 @@ def main():
     for calendar_id in ids:
         if 'listenfirstmedia' in calendar_id:
             diff = get_most_available_block(service, calendar_id, start_time, end_time)
-            print(calendar_id + ' is most available from ' + diff[0].isoformat() + ' to ' + diff[1].isoformat() + ', which is ' + str(diff[1] - diff[0]))
+            print('| NAME: ' + calendar_id + ' \t\t| TIME_BLOCK: ' +
+                  diff[0].strftime('%B %d, %Y') + ' on ' + diff[0].strftime('%A') +
+                  ' from ' + diff[0].strftime('%H:%M') + ' to ' + diff[1].strftime('%H:%M') +
+                  ', which is ' + str(diff[1] - diff[0]) + ' hours')
 
 if __name__ == '__main__':
     main()
