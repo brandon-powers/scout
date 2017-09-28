@@ -20,51 +20,53 @@ def get_most_available_block(service, calendar_id, start_time, end_time):
     ranges = []
     while s.day <= e.day:
         _s = datetime(s.year, s.month, s.day, 13, 0, 0)
-        start = pytz.utc.localize(_s).isoformat()
-        end = pytz.utc.localize(_s + timedelta(hours=8)).isoformat()
+        start = pytz.utc.localize(_s).astimezone(pytz.timezone('US/Eastern'))
+        end = pytz.utc.localize(_s + timedelta(hours=8)).astimezone(pytz.timezone('US/Eastern'))
         ranges.append((start, end))
         s += timedelta(days=1)
 
-    real_max = timedelta()
 
     # for each day
+    real_max = timedelta()
+    real_s = real_e = None
     for r in ranges:
 
         # get events for that day
         eventsResult = service.events().list(
-                calendarId=calendar_id, timeMin=r[0], timeMax=r[1], 
+                calendarId=calendar_id, timeMin=r[0].isoformat(), timeMax=r[1].isoformat(),
                 singleEvents=True, orderBy='startTime').execute()
         events = eventsResult.get('items', [])
 
-        print('************')
-
         # get event_ranges for each event on given day
         event_ranges = []
+        event_ranges.append((r[0], r[0]))
         for d in events:
-            start = d['start']
-            if not start.get('dateTime'):
+            st = d['start']
+            if not st.get('dateTime'):
                 continue
-            start = parse(start['dateTime'])
-            end = parse(d['end']['dateTime'])
-            event_ranges.append((start, end))
+            st = parse(st['dateTime'])
+            en = parse(d['end']['dateTime'])
+            event_ranges.append((st, en))
+        event_ranges.append((r[1], r[1]))
 
         # use event_ranges to find max_range for that day
         max_diff = timedelta()
-        for v in event_ranges:
-            print(v[0].isoformat() + ' --- ' + v[1].isoformat())
-            diff = v[1] - v[0]
-            if max_diff < diff:
-                max_diff = diff
-        print('MAX: ' + str(max_diff))
-
+        s = e = None
+        i = 1
+        while i < len(event_ranges):
+            if event_ranges[i-1][1] < event_ranges[i][0]:
+                diff = event_ranges[i][0] - event_ranges[i-1][1]
+                if max_diff < diff:
+                    max_diff = diff
+                    s = event_ranges[i-1][1]
+                    e = event_ranges[i][0]
+            i += 1
+        
         if real_max < max_diff:
             real_max = max_diff
-
-        print('************')
-
-    print('FOR ALL DAYS: ' + str(real_max))
-
-    return events
+            real_s = s
+            real_e = e
+    return (real_s, real_e)
 
 def get_credentials():
     auth_dir = os.path.abspath('config')
@@ -86,11 +88,24 @@ def main():
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('calendar', 'v3', http=http)
 
-    calendar_id = 'primary'
-    start_time = '2017-09-10'
-    end_time = '2017-09-26'
+    ids = []
+    page_token = None
+    while True:
+        calendar_list = service.calendarList().list(pageToken=page_token).execute()
+        for calendar_list_entry in calendar_list['items']:
+            ids.append(calendar_list_entry['summary'])
+        page_token = calendar_list.get('nextPageToken')
+        if not page_token:
+            break
 
-    diff = get_most_available_block(service, calendar_id, start_time, end_time)
+    ids.append('primary')
+    start_time = '2017-09-25'
+    end_time = '2017-09-29'
+
+    for calendar_id in ids:
+        if 'listenfirstmedia' in calendar_id:
+            diff = get_most_available_block(service, calendar_id, start_time, end_time)
+            print(calendar_id + ' is most available from ' + diff[0].isoformat() + ' to ' + diff[1].isoformat() + ', which is ' + str(diff[1] - diff[0]))
 
 if __name__ == '__main__':
     main()
