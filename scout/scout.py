@@ -6,8 +6,21 @@ import httplib2
 import os
 import json
 import pytz
+import argparse
 from dateutil.parser import parse
 from datetime import datetime, timedelta
+
+parser = argparse.ArgumentParser(
+            description='A Google Calendar discovery tool',
+            prog='scout', usage='%(prog)s [-w | -i]',
+            epilog='See documentation at https://github.com/brandon-powers/scout for more help.'
+        )
+discovery_flags = parser.add_argument_group('discovery')
+discovery_flags.add_argument('-w', '--workplace', action='store_true',
+        help='discover for workplace')
+discovery_flags.add_argument('-i', '--individual', action='store_true',
+        help='discover for individual')
+args = parser.parse_args()
 
 SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
 CLIENT_SECRET_FILE = 'auth.json'
@@ -16,7 +29,7 @@ APPLICATION_NAME = 'scout'
 """
 TODO:
     1. set up argparse CLI opts
-    2. implement OAuth flow in auth() function
+    2. implement OAuth flow in auth() function (google-auth)
     3. convert existing code into Scout class methods + refactor
     4. write tests for current functionality + TDD for any new code
     5. improve docs using Python convention (need to read PEP docs)
