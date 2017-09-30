@@ -13,6 +13,48 @@ SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
 CLIENT_SECRET_FILE = 'auth.json'
 APPLICATION_NAME = 'scout'
 
+"""
+TODO:
+    1. set up argparse CLI opts
+    2. implement OAuth flow in auth() function
+    3. convert existing code into Scout class methods + refactor
+    4. write tests for current functionality + TDD for any new code
+    5. improve docs using Python convention (need to read PEP docs)
+    6. improve/learn more about Python / pip package structure
+    7. flesh out some new features/functionality for Scout & it's design, scope, & goals
+
+Current functionality:
+    1. workplace discovery:
+        constraints: START (9AM), END (5PM)
+        args: startDate --> endDate
+        return: [name, startTime --> endTime] of most available in the given date range, for each calendar the root user has at least freeBusy access
+
+    2. individual discovery:
+        same as workplace discovery, but returns a single time range for the root user
+        return: name, startTime --> endTime
+"""
+
+class Scout():
+    def __init__(self):
+        print('Scout __init__')
+
+    def auth(self):
+        """
+        Example docstring -->
+
+        Runs through the OAuth flow
+
+        :param self [Object] instance of object
+        :return [boolean] success or failure
+        """
+        print('auth -- go through oauth flow if credentials do not exist')
+
+    def workplace_discovery(self):
+        print('workplace_discovery')
+
+    def individual_discovery(self):
+        print('individual_discovery')
+
 def get_most_available_block(service, calendar_id, start_time, end_time):
     # break up date range to array of start/end date ranges for each day
     s = parse(start_time)
