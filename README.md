@@ -6,6 +6,7 @@ The proof of concept for Scout was developed during a two week slack-a-thon (hac
 
 ### Project Organization
 
+```
 scout/
 ├── scout
 │   ├── config
@@ -14,6 +15,7 @@ scout/
 │   └── scout.py
 ├── README.md
 └── setup.py
+```
 
 **scout**: Python package for Scout
 
