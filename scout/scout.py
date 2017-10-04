@@ -36,7 +36,8 @@ import argparse
 parser = argparse.ArgumentParser(
             description='A Google Calendar discovery tool',
             prog='scout', usage='%(prog)s [-w | -i]',
-            epilog='See documentation at https://github.com/brandon-powers/scout for more help.'
+            epilog='See documentation at https://github.com/brandon-powers/scout for more help.',
+            parents=[tools.argparser]
         )
 discovery_flags = parser.add_argument_group('discovery')
 w_help = 'output the most available block of time for each calendar you' \
@@ -64,12 +65,6 @@ class Scout():
         :param self [Object] instance of object
         :return [boolean] success or failure
         """
-        # flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-        # home_dir = os.path.expanduser('~')
-        # credential_dir = os.path.join(home_dir, '.credentials')
-        # if not os.path.exists(credential_dir):
-        #     os.makedirs(credential_dir)
-
         credential_dir = os.path.abspath('config')
         credential_path = os.path.join(credential_dir, 'auth_token.json')
         store = Storage(credential_path)
@@ -78,14 +73,14 @@ class Scout():
         if not credentials or credentials.invalid:
             flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
             flow.user_agent = APPLICATION_NAME
-            credentials = tools.run_flow(flow, store) #, flags)
+            credentials = tools.run_flow(flow, store, args)
             print('Storing credentials to ' + credential_path)
 
         http = credentials.authorize(httplib2.Http())
         service = discovery.build('calendar', 'v3', http=http)
         return service
 
-    def workplace_discovery(self, date_range, hour_range):
+    def get_calendar_ids(self):
         ids = []
         page_token = None
         while True:
@@ -95,8 +90,11 @@ class Scout():
             page_token = calendar_list.get('nextPageToken')
             if not page_token:
                 break
-
         ids.append('primary')
+        return ids
+
+    def workplace_discovery(self, date_range, hour_range):
+        ids = self.get_calendar_ids()
         start_date = date_range[0]
         end_date = date_range[1]
 
