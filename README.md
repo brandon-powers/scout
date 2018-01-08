@@ -23,19 +23,21 @@ scout/
 
 ## TODO
 
-- keep *scout* name, just repurpose it as a measurement tool. It kind of still fits the above description.
-- define behavior of this application; what does it do? use cases, etc.
+1. keep *scout* name, just repurpose it as a measurement tool. It kind of still fits the above description.
+2. define behavior of this application; what does it do? use cases, etc.
   - list all calendars you have access to
   - given a particular calendar id & date range, output reports/measurements of busyness of each work week (M-F, 8AM-6PM, make configurable)
-    * the amount of detail here will change based on the access control (acl) role the end-user has
-      # n. <access-control-role>
+    - the amount of detail here will change based on the access control (acl) role the end-user has
 
-      1. freeBusyReader:
+      # n. <access-control-role>
+      - freeBusyReader:
+
         week X:
           # no enum option, only individual event timings
           [event] <id> was in a "busy" state for n time
 
-      2. >= reader:
+      - >= reader:
+
         week X:
           # have an enum with meeting names, output time for each kind of meeting, then a total
           # 1. have optional enums that combine particular event names and have aggregate stats
