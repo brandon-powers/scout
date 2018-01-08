@@ -29,6 +29,7 @@ scout/
   - given a particular calendar id & date range, output reports/measurements of busyness of each work week (M-F, 8AM-6PM, make configurable)
     - the amount of detail here will change based on the access control (acl) role the end-user has
 
+      ```
       # n. <access-control-role>
       - freeBusyReader:
 
@@ -47,6 +48,8 @@ scout/
           [event] <id> was in a "Sprint Meeting" state for n time
           [event] <id> was in a "Daily Standup" state for n time
           [aggregate] <id> was in a "meetings" state for n time
+        ```
+
   - ability to perform above function for all calendar id's returned from list, check access control role before hand
 
 ## Toolkit
