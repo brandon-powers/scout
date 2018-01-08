@@ -8,7 +8,11 @@ setup(name='Scout',
       author_email='brandon.powers@listenfirstmedia.com',
       packages=['scout'],
       install_requires=[
-          'oauth2client',
-          'google-api-python-client',
-          'boto'
+        'google-api-python-client',
+        'oauth2client',
+        'google-auth-oauthlib',
+        'pep8',
+        'google-auth-httplib2',
+        'python-dateutil',
+        'matplotlib'
       ])
