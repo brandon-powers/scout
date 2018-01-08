@@ -51,6 +51,12 @@ scout/
         ```
 
   - ability to perform above function for all calendar id's returned from list, check access control role before hand
+3. Convert to toolkit below
+4. Clean up, add tests, add measurement functionality per calendar id
+4.5. Add graph plotting functionality, maybe multiple outputs in the form of graphs/reports
+5. Add CLI capability and remove old scout
+6. Consider yml instead of json for config
+7. Docs
 
 ## Toolkit
 
