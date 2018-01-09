@@ -20,8 +20,10 @@ scout/
 │   │   ├── client_secrets.json
 │   │   └── credentials.json
 │   ├── __init__.py
+│   ├── oauth_credentials.py
 │   └── scout.py
-└── setup.py
+├── setup.py
+└── tests
 ```
 
 **scout**: Python package for Scout
