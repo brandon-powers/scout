@@ -29,15 +29,15 @@ scout/
   * aggregate event types only work if 'reader' access is available
   * allow configuration of the 'work week': startDay, endDay, startTime, endTime
 - given a file path to a list of calendar ids [or a comma-separated list], perform action above for each calendar id
-- default output: STDOUT; allow output flags for custom output of data i.e. matplotlib graphs/viz files
+- default output: STDOUT; allow output flags for custom output of data in csv or json form
 
 ```
-$ scout --list-calendars
+$ scout --list-calendars [--csv | --json]
 
 id: brandon.powers@listenfirstmedia.com
 id: mike.stanley@listenfirstmedia.com
 
-$ scout --list-calendars -v
+$ scout --list-calendars -v [--csv | --json]
 
 id: brandon.powers@listenfirstmedia.com
 timeZone: America/New_York
@@ -47,7 +47,7 @@ id: mike.stanley@listenfirstmedia.com
 timeZone: America/New_York
 accessRole: reader
 
-$ scout --discover {<comma-separated-ids> | -f <file> | -g <calendar_group>} [-s <startDateTime> -e <endDateTime>] [--graph]
+$ scout --discover {<comma-separated-ids> | -g <calendar_group>} [-s <startDateTime> -e <endDateTime>] [--csv | --json]
 
 # example: calendar_groups.json
 {

@@ -6,10 +6,66 @@ from apiclient import discovery
 import datetime
 import json
 import os.path
+import argparse
+
+usage = '\n$ scout --list-calendars [-v] [--csv | --json]'
+usage += '\n$ scout --discover {<comma-separated-ids> | -g <calendar_group>} [-s <startDateTime> -e <endDateTime>] [--csv | --json]'
+parser = argparse.ArgumentParser(
+            description='A Google Calendar discovery tool',
+            prog='scout', usage=usage,
+            epilog='See documentation at https://github.com/brandon-powers/scout for more help.'
+        )
+
+list_flags = parser.add_argument_group('list')
+
+list_help = 'output the calendars you have access to'
+list_flags.add_argument('-l', '--list-calendars', action='store_true', help=list_help)
+
+verbose_help = 'display the access control role and time zone for each calendar listed'
+list_flags.add_argument('-v', '--verbose', action='store_true', help=verbose_help)
+
+discover_flags = parser.add_argument_group('discover')
+discover_help = 'discover busyness of a set of calendars'
+discover_flags.add_argument('-d', '--discover', action='store_true', help=discover_help)
+
+group_help = 'specify a custom list of calendar ids to discover i.e. a calendar group'
+discover_flags.add_argument('-g', '--calendar-group', action='store_true', help=group_help)
+
+start_help = 'specify a start date time i.e. YYYYMMDDTHH:mm:ssZ, 20180108T00:03:00Z'
+discover_flags.add_argument('-s', '--start', action='store_true', help=start_help)
+
+end_help = 'specify an end date time i.e. YYYYMMDDTHH:mm:ssZ, 20180108T00:03:00Z'
+discover_flags.add_argument('-e', '--end', action='store_true', help=end_help)
+
+output_flags = parser.add_argument_group('output')
+output_help_csv = 'output Scout data in csv format'
+output_flags.add_argument('-c', '--csv', action='store_true', help=output_help_csv)
+
+output_help_json = 'output Scout data in json format'
+output_flags.add_argument('-j', '--json', action='store_true', help=output_help_json)
+args = parser.parse_args()
 
 class Scout():
     def __init__(self):
         self.client = self.get_client()
+        self.output_format = 'stdout'
+
+    def list_calendars(self, verbose):
+        print('stub')
+
+    def discover(self, ids, start, end):
+        # calendar_group vs. comma-separated input is dealt
+        # with outside of this function, with cli input
+        print('stub')
+
+    def set_output_format(output_format):
+        try:
+            if output_format in ['csv', 'json']:
+                self.output_format = output_format
+            else:
+                raise ValueError
+        except ValueError:
+            print('invalid output format')
 
     def get_client(self):
         return discovery.build('calendar', 'v3', credentials=self.get_credentials())
@@ -90,11 +146,11 @@ class Scout():
             title = event['summary']
             print(str(title) + ' -- ' + str(length))
 
-scout = Scout()
-calendars = scout.get_calendars()[0]
-print json.dumps(calendars[0], indent=4)
-for calendar in calendars:
-    events = scout.get_events_for_calendar(calendar['id'])[0]
-    if calendar['id'] == 'brandon.powers@listenfirstmedia.com':
-        print json.dumps(events, indent=4)
-    print(str(len(events)) + 'for -> ' + str(calendar['id']))
+# scout = Scout()
+# calendars = scout.get_calendars()[0]
+# print json.dumps(calendars[0], indent=4)
+# for calendar in calendars:
+#     events = scout.get_events_for_calendar(calendar['id'])[0]
+#     if calendar['id'] == 'brandon.powers@listenfirstmedia.com':
+#         print json.dumps(events, indent=4)
+#     print(str(len(events)) + 'for -> ' + str(calendar['id']))
