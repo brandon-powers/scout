@@ -11,8 +11,6 @@ setup(name='Scout',
         'google-api-python-client',
         'oauth2client',
         'google-auth-oauthlib',
-        'pep8',
         'google-auth-httplib2',
         'python-dateutil',
-        'matplotlib'
       ])

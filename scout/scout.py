@@ -77,7 +77,7 @@ class Scout():
             return self.get_new_credentials()
 
     def get_existing_credentials(self):
-        with open('credentials.json', 'r') as f:
+        with open('config/credentials.json', 'r') as f:
             config = json.load(f)
         return Credentials(token=config['token'],
                 refresh_token=config['refresh_token'],
@@ -89,7 +89,7 @@ class Scout():
 
     def get_new_credentials(self):
         flow = Flow.from_client_secrets_file(
-                'client_secrets.json',
+                'config/client_secrets.json',
                 scopes=['https://www.googleapis.com/auth/calendar'],
                 redirect_uri='urn:ietf:wg:oauth:2.0:oob')
         auth_url, _ = flow.authorization_url(prompt='consent')
@@ -97,7 +97,7 @@ class Scout():
         code = raw_input('Enter the authorization code: ')
         flow.fetch_token(code=code)
         credentials = flow.credentials
-        with open('credentials.json', 'w') as f:
+        with open('config/credentials.json', 'w') as f:
             config = {'token': credentials.token,
                     'refresh_token': credentials.refresh_token,
                     'id_token': credentials.id_token,

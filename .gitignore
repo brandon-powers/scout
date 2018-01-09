@@ -1,5 +1,3 @@
 *.pyc
-/dist/
-/*.egg-info
-/scout/credentials.json
-/scout/client_secrets.json
+/scout/config/credentials.json
+/scout/config/client_secrets.json

@@ -1,0 +1,11 @@
+{
+  "meetings": [
+    "Daily Standup",
+    "Sprint Meeting",
+    "Weekly Ingest"
+  ],
+  "hiring": [
+    "ListenFirst Phone Interview",
+    "ListenFirst Programming Test"
+  ]
+}
