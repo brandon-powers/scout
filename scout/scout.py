@@ -1,26 +1,25 @@
 #!/usr/bin/env python
 
-from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials
 from apiclient import discovery
+from oauth_credentials import OAuthCredentials
 import datetime
 import json
-import os.path
 import argparse
 
-usage = '\n$ scout --list-calendars [-v] [--csv | --json]'
-usage += '\n$ scout --discover {<comma-separated-ids> | -g <calendar_group>} [-s <startDateTime> -e <endDateTime>] [--csv | --json]'
+usage = '\n$ scout --list-calendars [-v] [--csv | --json] ' \
+        '\n$ scout --discover {<comma-separated-ids> | -g <calendar_group>} ' \
+        '[-s <startDateTime> -e <endDateTime>] [--csv | --json]'
+epilog = 'See documentation at https://github.com/brandon-powers/scout for more help.'
 parser = argparse.ArgumentParser(
             description='A Google Calendar discovery tool',
-            prog='scout', usage=usage,
-            epilog='See documentation at https://github.com/brandon-powers/scout for more help.'
+            prog='scout',
+            usage=usage,
+            epilog=epilog
         )
 
 list_flags = parser.add_argument_group('list')
-
 list_help = 'output the calendars you have access to'
 list_flags.add_argument('-l', '--list-calendars', action='store_true', help=list_help)
-
 verbose_help = 'display the access control role and time zone for each calendar listed'
 list_flags.add_argument('-v', '--verbose', action='store_true', help=verbose_help)
 
@@ -33,22 +32,35 @@ discover_flags.add_argument('-g', '--calendar-group', action='store_true', help=
 
 start_help = 'specify a start date time i.e. YYYYMMDDTHH:mm:ssZ, 20180108T00:03:00Z'
 discover_flags.add_argument('-s', '--start', action='store_true', help=start_help)
-
 end_help = 'specify an end date time i.e. YYYYMMDDTHH:mm:ssZ, 20180108T00:03:00Z'
 discover_flags.add_argument('-e', '--end', action='store_true', help=end_help)
 
 output_flags = parser.add_argument_group('output')
 output_help_csv = 'output Scout data in csv format'
 output_flags.add_argument('-c', '--csv', action='store_true', help=output_help_csv)
-
 output_help_json = 'output Scout data in json format'
 output_flags.add_argument('-j', '--json', action='store_true', help=output_help_json)
 args = parser.parse_args()
 
 class Scout():
+    OUTPUT_FORMATS = ['stdout', 'csv', 'json']
+
     def __init__(self):
-        self.client = self.get_client()
-        self.output_format = 'stdout'
+        credentials = OAuthCredentials().get_credentials()
+        self.client = self.get_client(credentials)
+        self.set_output_format('stdout')
+
+    def get_client(self, credentials):
+        return discovery.build('calendar', 'v3', credentials=credentials)
+
+    def set_output_format(self, output_format):
+        try:
+            if output_format in self.OUTPUT_FORMATS:
+                self.output_format = output_format
+            else:
+                raise ValueError
+        except ValueError:
+            print('Error: invalid output format')
 
     def list_calendars(self, verbose):
         print('stub')
@@ -57,56 +69,6 @@ class Scout():
         # calendar_group vs. comma-separated input is dealt
         # with outside of this function, with cli input
         print('stub')
-
-    def set_output_format(output_format):
-        try:
-            if output_format in ['csv', 'json']:
-                self.output_format = output_format
-            else:
-                raise ValueError
-        except ValueError:
-            print('invalid output format')
-
-    def get_client(self):
-        return discovery.build('calendar', 'v3', credentials=self.get_credentials())
-
-    def get_credentials(self):
-        if os.path.isfile('credentials.json'):
-            return self.get_existing_credentials()
-        else:
-            return self.get_new_credentials()
-
-    def get_existing_credentials(self):
-        with open('config/credentials.json', 'r') as f:
-            config = json.load(f)
-        return Credentials(token=config['token'],
-                refresh_token=config['refresh_token'],
-                id_token=config['id_token'],
-                token_uri=config['token_uri'],
-                client_id=config['client_id'],
-                client_secret=config['client_secret'],
-                scopes=config['scopes'])
-
-    def get_new_credentials(self):
-        flow = Flow.from_client_secrets_file(
-                'config/client_secrets.json',
-                scopes=['https://www.googleapis.com/auth/calendar'],
-                redirect_uri='urn:ietf:wg:oauth:2.0:oob')
-        auth_url, _ = flow.authorization_url(prompt='consent')
-        print('Please go to this URL: {}'.format(auth_url))
-        code = raw_input('Enter the authorization code: ')
-        flow.fetch_token(code=code)
-        credentials = flow.credentials
-        with open('config/credentials.json', 'w') as f:
-            config = {'token': credentials.token,
-                    'refresh_token': credentials.refresh_token,
-                    'id_token': credentials.id_token,
-                    'token_uri': credentials.token_uri,
-                    'client_id': credentials.client_id,
-                    'client_secret': credentials.client_secret,
-                    'scopes': credentials.scopes}
-            f.write(json.dumps(config))
-        return credentials
 
     def get_calendars(self):
         calendars = []
@@ -146,11 +108,11 @@ class Scout():
             title = event['summary']
             print(str(title) + ' -- ' + str(length))
 
-# scout = Scout()
-# calendars = scout.get_calendars()[0]
-# print json.dumps(calendars[0], indent=4)
-# for calendar in calendars:
-#     events = scout.get_events_for_calendar(calendar['id'])[0]
-#     if calendar['id'] == 'brandon.powers@listenfirstmedia.com':
-#         print json.dumps(events, indent=4)
-#     print(str(len(events)) + 'for -> ' + str(calendar['id']))
+scout = Scout()
+calendars = scout.get_calendars()[0]
+print json.dumps(calendars[0], indent=4)
+for calendar in calendars:
+    events = scout.get_events_for_calendar(calendar['id'])[0]
+    if calendar['id'] == 'brandon.powers@listenfirstmedia.com':
+        print json.dumps(events, indent=4)
+    print(str(len(events)) + 'for -> ' + str(calendar['id']))
