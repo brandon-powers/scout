@@ -23,45 +23,75 @@ scout/
 
 ## TODO
 
-1. keep *scout* name, just repurpose it as a measurement tool. It kind of still fits the above description.
-2. define behavior of this application; what does it do? use cases, etc.
-  - list all calendars you have access to
-  - given a particular calendar id & date range, output reports/measurements of busyness of each work week (M-F, 8AM-6PM, make configurable)
-    - the amount of detail here will change based on the access control (acl) role the end-user has
+- list all calendars
+- given a calendar id and a date range, for each work week in the date range, output sum of time taken by each type of event (based on 'summary')
+  * allow configuration of aggregate event types; if one or more events in that aggregate event type is detected, output the aggregate sum of time taken by each type of event in the aggregate
+  * aggregate event types only work if 'reader' access is available
+  * allow configuration of the 'work week': startDay, endDay, startTime, endTime
+- given a file path to a list of calendar ids [or a comma-separated list], perform action above for each calendar id
+- default output: STDOUT; allow output flags for custom output of data i.e. matplotlib graphs/viz files
 
-      ```
-      # n. <access-control-role>
-      - freeBusyReader:
+```
+$ scout --list-calendars
 
-        week X:
-          # no enum option, only individual event timings
-          [event] <id> was in a "busy" state for n time
+id: brandon.powers@listenfirstmedia.com
+id: mike.stanley@listenfirstmedia.com
 
-      - >= reader:
+$ scout --list-calendars -v
 
-        week X:
-          # have an enum with meeting names, output time for each kind of meeting, then a total
-          # 1. have optional enums that combine particular event names and have aggregate stats
-          # i.e. -> meetings={Sprint meeting, Daily standup, Weekly Ingest}, hiring={Phone Interview, etc.}
-          # 2. if not a part of an enum, a particular event will be grouped as is and reported; if part of enum, will have additionally aggregation at end of individual report
+id: brandon.powers@listenfirstmedia.com
+timeZone: America/New_York
+accessRole: freeBusyReader
 
-          [event] <id> was in a "Sprint Meeting" state for n time
-          [event] <id> was in a "Daily Standup" state for n time
-          [aggregate] <id> was in a "meetings" state for n time
-        ```
+id: mike.stanley@listenfirstmedia.com
+timeZone: America/New_York
+accessRole: reader
 
-  - ability to perform above function for all calendar id's returned from list, check access control role before hand
-3. Convert to toolkit below
-4. Clean up, add tests, add measurement functionality per calendar id
-4.5. Add graph plotting functionality, maybe multiple outputs in the form of graphs/reports
-5. Add CLI capability and remove old scout
-6. Consider yml instead of json for config
-7. Docs
+$ scout --discover {<comma-separated-ids> | -f <file> | -g <calendar_group>} [-s <startDateTime> -e <endDateTime>] [--graph]
 
-## Toolkit
+# example: calendar_groups.json
+{
+  "dev": [
+    "brandon.powers@listenfirstmedia.com",
+    "mike.stanley@listenfirstmedia.com"
+  ]
+}
+
+# example: aggregate_event_types.json
+{
+  "meetings": [
+    "Daily Standup",
+    "Sprint Meeting",
+    "Weekly Ingest"
+  ]
+}
+
+configuration files:
+  1. client_secrets.json
+  2. credentials.json
+  3. aggregate_event_types.json
+  4. calendar_groups.json
+
+example output:
+  startDateTime to endDateTime:
+    id0:
+      [event] <id> was in a "Sprint Meeting" state for n time
+      [event] <id> was in a "Daily Standup" state for n time
+      [aggregate] <id> was in a "meetings" state for n time
+
+    id1:
+      [event] <id> was in a "Sprint Meeting" state for n time
+      [event] <id> was in a "Daily Standup" state for n time
+      [aggregate] <id> was in a "meetings" state for n time
+
+    id2:
+      ...
+```
+
+## Desired Toolkit
 
 - python 3.6
 - pipenv
 - unittest
 - google api python client
-- oauthlib + request-oauthlib
+- google oauth libs

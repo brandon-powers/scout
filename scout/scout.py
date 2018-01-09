@@ -53,14 +53,28 @@ class Scout():
         return credentials
 
     def get_calendars(self):
+        calendars = []
         page_token = None
         while True:
             calendar_list = self.client.calendarList().list(pageToken=page_token).execute()
-            for calendar_list_entry in calendar_list['items']:
-                print calendar_list_entry['summary']
+            calendars.append(calendar_list['items'])
             page_token = calendar_list.get('nextPageToken')
             if not page_token:
                 break
+        return calendars
+
+    def get_events_for_calendar(self, calendar_id):
+        now = datetime.datetime.utcnow().isoformat() + 'Z'
+        then = (datetime.datetime.utcnow() - datetime.timedelta(days=14)).isoformat() + 'Z'
+        res = []
+        page_token = None
+        while True:
+            events = self.client.events().list(timeMin=then, timeMax=now, singleEvents=True, calendarId=calendar_id, pageToken=page_token, maxResults=100).execute()
+            res.append(events['items'])
+            page_token = events.get('nextPageToken')
+            if not page_token:
+                break
+        return res
 
     def get_events(self):
         now = datetime.datetime.utcnow().isoformat() + 'Z'
@@ -76,23 +90,11 @@ class Scout():
             title = event['summary']
             print(str(title) + ' -- ' + str(length))
 
-    def plot(self):
-        import matplotlib.pyplot as plt; plt.rcdefaults()
-        import numpy as np
-        import matplotlib.pyplot as plt
-
-        objects = ('Python', 'C++', 'Java', 'Perl', 'Scala', 'Lisp')
-        y_pos = np.arange(len(objects))
-        performance = [10,8,6,4,2,1]
-
-        plt.bar(y_pos, performance, align='center', alpha=0.5)
-        plt.xticks(y_pos, objects)
-        plt.ylabel('Usage')
-        plt.title('Programming language usage')
-
-        plt.show()
-
 scout = Scout()
-scout.get_calendars()
-scout.get_events()
-scout.plot()
+calendars = scout.get_calendars()[0]
+print json.dumps(calendars[0], indent=4)
+for calendar in calendars:
+    events = scout.get_events_for_calendar(calendar['id'])[0]
+    if calendar['id'] == 'brandon.powers@listenfirstmedia.com':
+        print json.dumps(events, indent=4)
+    print(str(len(events)) + 'for -> ' + str(calendar['id']))
