@@ -9,17 +9,34 @@ import csv
 import argparse
 
 class Scout():
+    """This class offers Google Calendar utilities with multiple output formats.
+
+    The two different actions this class implements:
+        * event discovery
+        * calendar listing
+
+    It also offers support for the following output formats:
+        * stdout
+        * csv
+        * json
+
+    See documentation at https://github.com/brandon-powers/scout for more help.'
+    """
+
     OUTPUT_FORMATS = ['stdout', 'csv', 'json']
 
     def __init__(self):
+        """Initializes the API client and default output format."""
         credentials = OAuthCredentials().get_credentials()
         self.client = self.get_client(credentials)
         self.set_output_format('stdout')
 
     def get_client(self, credentials):
+        """Returns the Google Calendar API client."""
         return discovery.build('calendar', 'v3', credentials=credentials)
 
     def set_output_format(self, output_format):
+        """Sets the output format of the object."""
         try:
             if output_format in self.OUTPUT_FORMATS:
                 self.output_format = output_format
@@ -29,6 +46,7 @@ class Scout():
             print('Error: invalid output format')
 
     def discover_calendars(self, calendar_ids, start, end):
+        """Discovers the event stats for a given set of calendars and date range."""
         stats = {}
         for calendar_id in calendar_ids:
             stats[calendar_id] = {}
@@ -52,6 +70,7 @@ class Scout():
         return stats
 
     def discover_events_for_calendar(self, calendar_id, start, end):
+        """Discovers the event stats for a single calendar in a date range."""
         calendar_events = []
         page_token = None
         while True:
@@ -64,6 +83,8 @@ class Scout():
         return calendar_events
 
     def output_discovery(self, stats, start, end):
+        """
+        """
         if self.output_format == 'stdout':
             self.output_discovery_to_stdout(stats, start, end)
         elif self.output_format == 'csv':
@@ -72,6 +93,8 @@ class Scout():
             self.output_discovery_to_json(stats, start, end)
 
     def output_discovery_to_stdout(self, stats, start, end):
+        """
+        """
         for calendar_id, stat in stats.iteritems():
             sum_aggregate = datetime.timedelta()
             for event, event_length in stat.iteritems():
@@ -80,6 +103,8 @@ class Scout():
             print('[aggregate] ' + str(calendar_id) + ' was busy for ' + str(sum_aggregate.total_seconds()) + ' seconds.\n')
 
     def output_discovery_to_csv(self, stats, start, end):
+        """
+        """
         with open('outfile.csv', 'w') as outfile:
             writer = csv.writer(outfile, lineterminator='\n')
             writer.writerow(['type', 'calendar_id', 'name', 'seconds', 'end', 'start'])
@@ -91,6 +116,8 @@ class Scout():
                 writer.writerow(['aggregate', str(calendar_id), 'sum', sum_aggregate.total_seconds(), str(start), str(end)])
 
     def output_discovery_to_json(self, stats, start, end):
+        """
+        """
         with open('outfile.json', 'w') as outfile:
             res = {}
             for calendar_id, stat in stats.iteritems():
@@ -115,7 +142,9 @@ class Scout():
                 res[calendar_id] = calendar_info
             json.dump(res, outfile)
 
-    def list_calendars(self, verbose):
+    def list_calendars(self):
+        """
+        """
         calendars = []
         page_token = None
         while True:
@@ -125,42 +154,42 @@ class Scout():
             if not page_token:
                 break
         calendars = [y for x in calendars for y in x]
-        self.output_calendars(calendars, verbose)
+        self.output_calendars(calendars)
         return calendars
 
-    def output_calendars(self, calendars, verbose):
-        if verbose:
-            calendars = map(lambda x: {'calendar_id': x['id'], 'access_role': x['accessRole']}, calendars)
-        else:
-            calendars = map(lambda x: {'calendar_id': x['id']}, calendars)
+    def output_calendars(self, calendars):
+        """
+        """
+        calendars = map(lambda x: {'calendar_id': x['id'], 'access_role': x['accessRole']}, calendars)
 
         if self.output_format == 'stdout':
             self.output_calendars_to_stdout(calendars)
         elif self.output_format == 'csv':
-            self.output_calendars_to_csv(calendars, verbose)
+            self.output_calendars_to_csv(calendars)
         elif self.output_format == 'json':
             self.output_calendars_to_json(calendars)
 
     def output_calendars_to_stdout(self, calendars):
+        """
+        """
         print(json.dumps(calendars, indent=4))
 
-    def output_calendars_to_csv(self, calendars, verbose):
+    def output_calendars_to_csv(self, calendars):
+        """
+        """
         with open('outfile.csv', 'w') as outfile:
             writer = csv.writer(outfile, lineterminator='\n')
-            if verbose:
-                writer.writerow(['calendar_id', 'access_role'])
-                for calendar in calendars:
-                    writer.writerow([calendar['calendar_id'], calendar['access_role']])
-            else:
-                writer.writerow(['calendar_id'])
-                for calendar in calendars:
-                    writer.writerow([calendar['calendar_id']])
+            writer.writerow(['calendar_id', 'access_role'])
+            for calendar in calendars:
+                writer.writerow([calendar['calendar_id'], calendar['access_role']])
 
     def output_calendars_to_json(self, calendars):
+        """
+        """
         with open('outfile.json', 'w') as outfile:
             json.dump(calendars, outfile)
 
-usage = '\n$ scout --list-calendars [-v] [--csv | --json] ' \
+usage = '\n$ scout --list-calendars [--csv | --json] ' \
         '\n$ scout --discover {<comma-separated-ids> | -g <calendar_group>} ' \
         '[-s <startDateTime> -e <endDateTime>] [--csv | --json]'
 epilog = 'See documentation at https://github.com/brandon-powers/scout for more help.'
@@ -174,8 +203,6 @@ parser = argparse.ArgumentParser(
 list_flags = parser.add_argument_group('list')
 list_help = 'output the calendars you have access to'
 list_flags.add_argument('-l', '--list-calendars', action='store_true', help=list_help)
-verbose_help = 'display the access control role and time zone for each calendar listed'
-list_flags.add_argument('-v', '--verbose', action='store_true', help=verbose_help)
 
 discover_flags = parser.add_argument_group('discover')
 discover_help = 'discover busyness of a set of calendars'
@@ -203,7 +230,7 @@ elif args.json:
     scout.set_output_format('json')
 
 if args.list_calendars:
-    scout.list_calendars(args.verbose)
+    scout.list_calendars()
 elif args.discover:
     if args.calendar_group != '':
         with open('config/calendar_groups.json', 'r') as f:
