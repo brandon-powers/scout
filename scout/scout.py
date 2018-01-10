@@ -28,44 +28,92 @@ class Scout():
         except ValueError:
             print('Error: invalid output format')
 
-    def output(self, value, action, start, end):
+    def discover_calendars(self, calendar_ids, start, end):
+        stats = {}
+        for calendar_id in calendar_ids:
+            stats[calendar_id] = {}
+            calendar_events = self.discover_events_for_calendar(calendar_id, start, end)
+            for event in calendar_events:
+                start_time = PA.parse(event['start']['dateTime'])
+                end_time = PA.parse(event['end']['dateTime'])
+                total_time = end_time - start_time
+
+                if event.get('summary'):
+                    summary = event['summary']
+                else:
+                    summary = 'busy'
+
+                if stats[calendar_id].get(summary):
+                    stats[calendar_id][summary] += total_time
+                else:
+                    stats[calendar_id][summary] = total_time
+
+        self.output_discovery(stats, start, end)
+        return stats
+
+    def discover_events_for_calendar(self, calendar_id, start, end):
+        calendar_events = []
+        page_token = None
+        while True:
+            events = self.client.events().list(timeMin=end, timeMax=start, singleEvents=True, calendarId=calendar_id, pageToken=page_token, maxResults=100).execute()
+            calendar_events.append(events['items'])
+            page_token = events.get('nextPageToken')
+            if not page_token:
+                break
+        calendar_events = [y for x in calendar_events for y in x]
+        return calendar_events
+
+    def output_discovery(self, stats, start, end):
         if self.output_format == 'stdout':
-            if action == 'list_calendar':
-                print(value)
-            elif action == 'discover':
-                for key, val in value.iteritems():
-                    summ = datetime.timedelta()
-                    for event, diff in val.iteritems():
-                        summ += diff
-                        print('[event] ' + str(key) + ' was in the ' + str(event) + ' state for ' + str(diff.total_seconds()) + ' seconds.')
-                    print('[aggregate] ' + str(key) + ' was busy for ' + str(summ.total_seconds()) + ' seconds.\n')
-
+            self.output_discovery_to_stdout(stats, start, end)
         elif self.output_format == 'csv':
-            if action == 'list_calendar':
-                with open('outfile.csv', 'w') as outfile:
-                    writer = csv.writer(outfile, lineterminator='\n')
-                    verbose = type(value[0]) != unicode
-                    if verbose:
-                        writer.writerow(['calendar_id', 'access_role'])
-                        for val in value:
-                            writer.writerow([val['calendar_id'], val['access_role']])
-                    else:
-                        writer.writerow(['id'])
-                        for val in value:
-                            writer.writerow([val])
-            elif action == 'discover':
-                with open('outfile.csv', 'w') as outfile:
-                    writer = csv.writer(outfile, lineterminator='\n')
-                    writer.writerow(['type', 'calendar_id', 'name', 'seconds', 'end', 'start'])
-                    for key, val in value.iteritems():
-                        summ = datetime.timedelta()
-                        for event, diff in val.iteritems():
-                            summ += diff
-                            writer.writerow(['event', str(key), str(event), diff.total_seconds(), str(start), str(end)])
-                        writer.writerow(['aggregate', str(key), 'sum', summ.total_seconds(), str(start), str(end)])
-
+            self.output_discovery_to_csv(stats, start, end)
         elif self.output_format == 'json':
-            print('stub')
+            self.output_discovery_to_json(stats, start, end)
+
+    def output_discovery_to_stdout(self, stats, start, end):
+        for calendar_id, stat in stats.iteritems():
+            sum_aggregate = datetime.timedelta()
+            for event, event_length in stat.iteritems():
+                sum_aggregate += event_length
+                print('[event] ' + str(calendar_id) + ' was in the ' + str(event) + ' state for ' + str(event_length.total_seconds()) + ' seconds.')
+            print('[aggregate] ' + str(calendar_id) + ' was busy for ' + str(sum_aggregate.total_seconds()) + ' seconds.\n')
+
+    def output_discovery_to_csv(self, stats, start, end):
+        with open('outfile.csv', 'w') as outfile:
+            writer = csv.writer(outfile, lineterminator='\n')
+            writer.writerow(['type', 'calendar_id', 'name', 'seconds', 'end', 'start'])
+            for calendar_id, stat in stats.iteritems():
+                sum_aggregate = datetime.timedelta()
+                for event, event_length in stat.iteritems():
+                    sum_aggregate += event_length
+                    writer.writerow(['event', str(calendar_id), str(event), event_length.total_seconds(), str(start), str(end)])
+                writer.writerow(['aggregate', str(calendar_id), 'sum', sum_aggregate.total_seconds(), str(start), str(end)])
+
+    def output_discovery_to_json(self, stats, start, end):
+        with open('outfile.json', 'w') as outfile:
+            res = {}
+            for calendar_id, stat in stats.iteritems():
+                calendar_info = []
+                sum_aggregate = datetime.timedelta()
+                for event, event_length in stat.iteritems():
+                    sum_aggregate += event_length
+                    calendar_info.append({
+                        'type': 'event',
+                        'calendar_id': str(calendar_id),
+                        'name': str(event),
+                        'time': event_length.total_seconds(),
+                        'start': str(start),
+                        'end': str(end)})
+                calendar_info.append({
+                    'type': 'aggregate',
+                    'calendar_id': str(calendar_id),
+                    'name': 'sum',
+                    'time': sum_aggregate.total_seconds(),
+                    'start': str(start),
+                    'end': str(end)})
+                res[calendar_id] = calendar_info
+            json.dump(res, outfile)
 
     def list_calendars(self, verbose):
         calendars = []
@@ -76,48 +124,41 @@ class Scout():
             page_token = calendar_list.get('nextPageToken')
             if not page_token:
                 break
-
-        if verbose:
-            output = map(lambda x: {'id': x['id'], 'accessRole': x['accessRole']}, calendars[0])
-        else:
-            output = map(lambda x: x['id'], calendars[0])
-        self.output(output, 'list_calendar', None, None)
+        calendars = [y for x in calendars for y in x]
+        self.output_calendars(calendars, verbose)
         return calendars
 
-    def discover(self, ids, start, end):
-        # calendar_group vs. comma-separated input is dealt
-        # with outside of this function, with cli input
-        sums = {}
-        for calendar_id in ids:
-            sums[calendar_id] = {}
-            discovery = self.discover_for_one_id(calendar_id, start, end)
-            for disc in discovery[0]:
-                start_diff = PA.parse(disc['start']['dateTime'])
-                end_diff = PA.parse(disc['end']['dateTime'])
-                length = end_diff - start_diff
+    def output_calendars(self, calendars, verbose):
+        if verbose:
+            calendars = map(lambda x: {'calendar_id': x['id'], 'access_role': x['accessRole']}, calendars)
+        else:
+            calendars = map(lambda x: {'calendar_id': x['id']}, calendars)
 
-                if disc.get('summary'):
-                    summary = disc['summary']
-                else:
-                    summary = 'busy'
+        if self.output_format == 'stdout':
+            self.output_calendars_to_stdout(calendars)
+        elif self.output_format == 'csv':
+            self.output_calendars_to_csv(calendars, verbose)
+        elif self.output_format == 'json':
+            self.output_calendars_to_json(calendars)
 
-                if sums[calendar_id].get(summary):
-                    sums[calendar_id][summary] += length
-                else:
-                    sums[calendar_id][summary] = length
-        self.output(sums, 'discover', start, end)
-        return sums
+    def output_calendars_to_stdout(self, calendars):
+        print(json.dumps(calendars, indent=4))
 
-    def discover_for_one_id(self, calendar_id, start, end):
-        res = []
-        page_token = None
-        while True:
-            events = self.client.events().list(timeMin=end, timeMax=start, singleEvents=True, calendarId=calendar_id, pageToken=page_token, maxResults=100).execute()
-            res.append(events['items'])
-            page_token = events.get('nextPageToken')
-            if not page_token:
-                break
-        return res
+    def output_calendars_to_csv(self, calendars, verbose):
+        with open('outfile.csv', 'w') as outfile:
+            writer = csv.writer(outfile, lineterminator='\n')
+            if verbose:
+                writer.writerow(['calendar_id', 'access_role'])
+                for calendar in calendars:
+                    writer.writerow([calendar['calendar_id'], calendar['access_role']])
+            else:
+                writer.writerow(['calendar_id'])
+                for calendar in calendars:
+                    writer.writerow([calendar['calendar_id']])
+
+    def output_calendars_to_json(self, calendars):
+        with open('outfile.json', 'w') as outfile:
+            json.dump(calendars, outfile)
 
 usage = '\n$ scout --list-calendars [-v] [--csv | --json] ' \
         '\n$ scout --discover {<comma-separated-ids> | -g <calendar_group>} ' \
@@ -154,8 +195,6 @@ output_flags.add_argument('-c', '--csv', action='store_true', help=output_help_c
 output_help_json = 'output Scout data in json format'
 output_flags.add_argument('-j', '--json', action='store_true', help=output_help_json)
 args = parser.parse_args()
-print(args.start)
-print(args.end)
 
 scout = Scout()
 if args.csv:
@@ -165,8 +204,8 @@ elif args.json:
 
 if args.list_calendars:
     scout.list_calendars(args.verbose)
-
-if args.calendar_group != '':
-    with open('config/calendar_groups.json', 'r') as f:
-        ids = json.load(f)[args.calendar_group]
-    scout.discover(ids, args.start, args.end)
+elif args.discover:
+    if args.calendar_group != '':
+        with open('config/calendar_groups.json', 'r') as f:
+            ids = json.load(f)[args.calendar_group]
+        scout.discover_calendars(ids, args.start, args.end)

@@ -8,14 +8,14 @@ class OAuthCredentials():
         self.credentials_path = 'config/credentials.json'
         self.client_secrets_path = 'config/client_secrets.json'
 
-    def credentials_exist(self):
-        return os.path.isfile(self.credentials_path)
-
     def get_credentials(self):
         if self.credentials_exist:
             return self.read_existing_credentials()
         else:
             return self.retrieve_new_credentials()
+
+    def credentials_exist(self):
+        return os.path.isfile(self.credentials_path)
 
     def read_existing_credentials(self):
         with open(self.credentials_path, 'r') as f:
@@ -58,4 +58,3 @@ class OAuthCredentials():
                 'client_id': credentials.client_id,
                 'client_secret': credentials.client_secret,
                 'scopes': credentials.scopes}
-
