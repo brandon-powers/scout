@@ -9,7 +9,7 @@ class OAuthCredentials():
         self.client_secrets_path = 'config/client_secrets.json'
 
     def get_credentials(self):
-        if self.credentials_exist:
+        if self.credentials_exist():
             return self.read_existing_credentials()
         else:
             return self.retrieve_new_credentials()
