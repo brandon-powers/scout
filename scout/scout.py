@@ -52,9 +52,12 @@ class Scout():
             stats[calendar_id] = {}
             calendar_events = self.discover_events_for_calendar(calendar_id, start, end)
             for event in calendar_events:
-                start_time = PA.parse(event['start']['dateTime'])
-                end_time = PA.parse(event['end']['dateTime'])
-                total_time = end_time - start_time
+                # Note: if these fields are missing, the assumption is the event is an
+                # all day event--these are not counted towards the total_time
+                if event['start'].get('dateTime') and event['end'].get('dateTime'):
+                    start_time = PA.parse(event['start']['dateTime'])
+                    end_time = PA.parse(event['end']['dateTime'])
+                    total_time = end_time - start_time
 
                 if event.get('summary'):
                     summary = event['summary']
