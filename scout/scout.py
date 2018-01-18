@@ -74,7 +74,7 @@ class Scout():
         calendar_events = []
         page_token = None
         while True:
-            events = self.client.events().list(timeMin=end, timeMax=start, singleEvents=True, calendarId=calendar_id, pageToken=page_token, maxResults=100).execute()
+            events = self.client.events().list(timeMin=start, timeMax=end, singleEvents=True, calendarId=calendar_id, pageToken=page_token, maxResults=100).execute()
             calendar_events.append(events['items'])
             page_token = events.get('nextPageToken')
             if not page_token:
@@ -107,7 +107,7 @@ class Scout():
         """
         with open('outfile.csv', 'w') as outfile:
             writer = csv.writer(outfile, lineterminator='\n')
-            writer.writerow(['type', 'calendar_id', 'name', 'seconds', 'end', 'start'])
+            writer.writerow(['type', 'calendar_id', 'name', 'seconds', 'start', 'end'])
             for calendar_id, stat in stats.iteritems():
                 sum_aggregate = datetime.timedelta()
                 for event, event_length in stat.iteritems():
