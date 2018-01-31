@@ -102,8 +102,8 @@ class Scout():
             sum_aggregate = datetime.timedelta()
             for event, event_length in stat.iteritems():
                 sum_aggregate += event_length
-                print('[event] ' + str(calendar_id) + ' was in the ' + str(event) + ' state for ' + str(event_length.total_seconds()) + ' seconds.')
-            print('[aggregate] ' + str(calendar_id) + ' was busy for ' + str(sum_aggregate.total_seconds()) + ' seconds.\n')
+                print('[event] ' + self.stringify(calendar_id) + ' was in the ' + self.stringify(event) + ' state for ' + self.stringify(event_length.total_seconds()) + ' seconds.')
+            print('[aggregate] ' + self.stringify(calendar_id) + ' was busy for ' + self.stringify(sum_aggregate.total_seconds()) + ' seconds.\n')
 
     def output_discovery_to_csv(self, stats, start, end):
         """
@@ -115,8 +115,8 @@ class Scout():
                 sum_aggregate = datetime.timedelta()
                 for event, event_length in stat.iteritems():
                     sum_aggregate += event_length
-                    writer.writerow(['event', str(calendar_id), str(event), event_length.total_seconds(), str(start), str(end)])
-                writer.writerow(['aggregate', str(calendar_id), 'sum', sum_aggregate.total_seconds(), str(start), str(end)])
+                    writer.writerow(['event', self.stringify(calendar_id), self.stringify(event), event_length.total_seconds(), self.stringify(start), self.stringify(end)])
+                writer.writerow(['aggregate', self.stringify(calendar_id), 'sum', sum_aggregate.total_seconds(), self.stringify(start), self.stringify(end)])
 
     def output_discovery_to_json(self, stats, start, end):
         """
@@ -130,18 +130,18 @@ class Scout():
                     sum_aggregate += event_length
                     calendar_info.append({
                         'type': 'event',
-                        'calendar_id': str(calendar_id),
-                        'name': str(event),
+                        'calendar_id': self.stringify(calendar_id),
+                        'name': self.stringify(event),
                         'time': event_length.total_seconds(),
-                        'start': str(start),
-                        'end': str(end)})
+                        'start': self.stringify(start),
+                        'end': self.stringify(end)})
                 calendar_info.append({
                     'type': 'aggregate',
-                    'calendar_id': str(calendar_id),
+                    'calendar_id': self.stringify(calendar_id),
                     'name': 'sum',
                     'time': sum_aggregate.total_seconds(),
-                    'start': str(start),
-                    'end': str(end)})
+                    'start': self.stringify(start),
+                    'end': self.stringify(end)})
                 res[calendar_id] = calendar_info
             json.dump(res, outfile)
 
@@ -192,6 +192,13 @@ class Scout():
         with open('outfile.json', 'w') as outfile:
             json.dump(calendars, outfile)
 
+    def stringify(self, s):
+        if isinstance(s, unicode):
+            return s.encode('utf-8')
+        else:
+            return str(s)
+
+
 usage = '\n$ scout --list-calendars [--csv | --json] ' \
         '\n$ scout --discover {<comma-separated-ids> | -g <calendar_group>} ' \
         '[-s <startDateTime> -e <endDateTime>] [--csv | --json]'
@@ -201,7 +208,7 @@ parser = argparse.ArgumentParser(
             prog='scout',
             usage=usage,
             epilog=epilog
-        )
+            )
 
 list_flags = parser.add_argument_group('list')
 list_help = 'output the calendars you have access to'
