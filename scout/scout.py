@@ -20,7 +20,7 @@ class Scout():
         * csv
         * json
 
-    See documentation at https://github.com/brandon-powers/scout for more help.'
+    See documentation at https://github.com/brandon-powers/scout for more help.
     """
 
     OUTPUT_FORMATS = ['stdout', 'csv', 'json']
